@@ -1,5 +1,6 @@
 
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "AS U GO | Travel Service",
@@ -16,6 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <body style={{ margin: 0, fontFamily: "Arial, sans-serif" }}>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
