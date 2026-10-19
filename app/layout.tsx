@@ -1,4 +1,5 @@
 
+import "./globals.css";
 import type { Metadata } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -14,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="bn">
       <body style={{ margin: 0, fontFamily: "Arial, sans-serif" }}>
         {children}
         <SpeedInsights />
@@ -22,4 +23,3 @@ export default function RootLayout({
     </html>
   );
 }
-import "./globals.css";
