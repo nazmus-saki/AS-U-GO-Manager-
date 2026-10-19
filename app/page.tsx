@@ -31,7 +31,7 @@ export default function Home() {
     setMessage("");
 
     try {
-      // Step 1: Login with Supabase Auth
+      // Step 1: Authenticate user
       const { data, error } =
         await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -39,6 +39,8 @@ export default function Home() {
         });
 
       if (error) {
+        console.error("Authentication failed:", error.message);
+
         throw new Error(
           "ইমেইল অথবা পাসওয়ার্ড সঠিক নয়। আবার চেষ্টা করুন।"
         );
@@ -48,36 +50,47 @@ export default function Home() {
         throw new Error("ব্যবহারকারী পাওয়া যায়নি।");
       }
 
-      // Step 2: Load and verify the user's profile
-      const { data: userProfile, error: profileError } =
-        await supabase
-          .from("profiles")
-          .select("full_name, role, active, business_id")
-          .eq("id", data.user.id)
-          .maybeSingle<UserProfile>();
+      // Step 2: Fetch user profile
+      const {
+        data: userProfile,
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .select("full_name, role, active, business_id")
+        .eq("id", data.user.id)
+        .maybeSingle<UserProfile>();
 
       if (profileError) {
+        console.error(
+          "Profile query failed:",
+          profileError
+        );
+
         await supabase.auth.signOut();
 
         throw new Error(
-          "প্রোফাইল যাচাই করা যায়নি। Supabase profiles টেবিলের RLS policy পরীক্ষা করুন।"
+          `প্রোফাইল লোড করা যায়নি: ${profileError.message}`
         );
       }
 
       if (!userProfile) {
+        console.error(
+          "No profile found for authenticated user:",
+          data.user.id
+        );
+
         await supabase.auth.signOut();
 
         throw new Error(
-          "এই অ্যাকাউন্টের প্রোফাইল পাওয়া যায়নি।"
+          "এই অ্যাকাউন্টের প্রোফাইল পাওয়া যায়নি। Supabase profiles টেবিলে user ID পরীক্ষা করুন।"
         );
       }
 
-      if (!userProfile.active) {
+      // Step 3: Validate account
+      if (userProfile.active !== true) {
         await supabase.auth.signOut();
 
-        throw new Error(
-          "এই অ্যাকাউন্টটি নিষ্ক্রিয়।"
-        );
+        throw new Error("এই অ্যাকাউন্টটি নিষ্ক্রিয়।");
       }
 
       if (
@@ -87,7 +100,7 @@ export default function Home() {
         await supabase.auth.signOut();
 
         throw new Error(
-          "এই অ্যাকাউন্টের অনুমতি নেই।"
+          `এই অ্যাকাউন্টের role অনুমোদিত নয়: ${userProfile.role}`
         );
       }
 
@@ -99,13 +112,19 @@ export default function Home() {
         );
       }
 
-      // Step 3: Redirect according to the user's role
+      // Step 4: Redirect according to role
       if (userProfile.role === "owner") {
         router.replace("/dashboard");
-      } else {
+        return;
+      }
+
+      if (userProfile.role === "driver") {
         router.replace("/driver");
+        return;
       }
     } catch (error) {
+      console.error("Login process failed:", error);
+
       setMessage(
         error instanceof Error
           ? error.message
@@ -169,7 +188,12 @@ export default function Home() {
         </p>
 
         <form onSubmit={handleLogin}>
-          <label htmlFor="email">ইমেইল</label>
+          <label
+            htmlFor="email"
+            style={{ display: "block" }}
+          >
+            ইমেইল
+          </label>
 
           <input
             id="email"
@@ -183,7 +207,12 @@ export default function Home() {
             style={inputStyle}
           />
 
-          <label htmlFor="password">পাসওয়ার্ড</label>
+          <label
+            htmlFor="password"
+            style={{ display: "block" }}
+          >
+            পাসওয়ার্ড
+          </label>
 
           <input
             id="password"
