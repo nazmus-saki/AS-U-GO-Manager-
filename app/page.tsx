@@ -1,10 +1,11 @@
 
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,13 +56,12 @@ export default function Home() {
         await supabase.auth.signOut();
         throw new Error("এই অ্যাকাউন্টের অনুমতি নেই।");
       }
+      if (userProfile.role === "owner") {
+  router.replace("/dashboard");
+} else {
+  router.replace("/driver");
+}
 
-      setProfile({
-        full_name: userProfile.full_name || "ব্যবহারকারী",
-        role: userProfile.role,
-      });
-
-      setMessage("লগইন সফল হয়েছে!");
     } catch (error) {
       setMessage(
         error instanceof Error
